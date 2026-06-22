@@ -4,6 +4,7 @@ import SignalCard from "@/components/SignalCard";
 import StatCounter from "@/components/StatCounter";
 import DiscoveryGauge from "@/components/DiscoveryGauge";
 import RiskDisclosureBox from "@/components/RiskDisclosureBox";
+import HeroDiscoveryCard from "@/components/HeroDiscoveryCard";
 
 const SIGNALS = [
   { label: "Volume Surge", desc: "Relative volume vs. the trailing average, the first sign something is happening." },
@@ -25,30 +26,35 @@ export default function Home() {
     <>
       {/* Hero */}
       <Section className="pt-16 sm:pt-28 pb-12 sm:pb-20">
-        <div className="max-w-3xl">
-          <Eyebrow>AI Discovery Engine, built in</Eyebrow>
-          <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-mist leading-[1.05]">
-            Know which penny stocks
-            <br />
-            are <span className="text-gradient-signal">actually moving.</span>
-          </h1>
-          <p className="mt-6 text-lg text-ash max-w-xl leading-relaxed">
-            EDGE continuously scores the micro-cap universe on volume, float, momentum,
-            and sentiment — so you see genuine strength, not noise, the moment it shows up.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              href="/download"
-              className="rounded-xl bg-signal px-6 py-3.5 text-sm font-semibold text-void hover:bg-signal/90 transition-colors"
-            >
-              Get the app
-            </Link>
-            <Link
-              href="/ai-discovery"
-              className="rounded-xl border border-hairline px-6 py-3.5 text-sm font-semibold text-mist hover:border-signal/60 transition-colors"
-            >
-              See how discovery works
-            </Link>
+        <div className="grid lg:grid-cols-[1fr_auto] gap-10 items-center">
+          <div className="max-w-2xl">
+            <Eyebrow>AI Discovery Engine, built in</Eyebrow>
+            <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-mist leading-[1.05]">
+              Know which penny stocks
+              <br />
+              are <span className="text-gradient-signal">actually moving.</span>
+            </h1>
+            <p className="mt-6 text-lg text-ash max-w-xl leading-relaxed">
+              EDGE continuously scores the micro-cap universe on volume, float, momentum,
+              and sentiment — so you see genuine strength, not noise, the moment it shows up.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/download"
+                className="rounded-xl bg-signal px-6 py-3.5 text-sm font-semibold text-void hover:bg-signal/90 transition-colors"
+              >
+                Get the app
+              </Link>
+              <Link
+                href="/ai-discovery"
+                className="rounded-xl border border-hairline px-6 py-3.5 text-sm font-semibold text-mist hover:border-signal/60 transition-colors"
+              >
+                See how discovery works
+              </Link>
+            </div>
+          </div>
+          <div className="hidden lg:block">
+            <HeroDiscoveryCard />
           </div>
         </div>
       </Section>

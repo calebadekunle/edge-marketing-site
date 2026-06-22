@@ -12,7 +12,16 @@ const COLUMNS = [
   {
     title: "Company",
     links: [
+      { href: "/about", label: "About" },
       { href: "/security", label: "Security & Compliance" },
+      { href: "/contact", label: "Contact" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { href: "/terms", label: "Terms & Conditions" },
+      { href: "/privacy", label: "Privacy Policy" },
       { href: "/security#disclosures", label: "Risk Disclosures" },
     ],
   },
@@ -21,7 +30,7 @@ const COLUMNS = [
 export default function Footer() {
   return (
     <footer className="border-t border-hairline">
-      <div className="mx-auto max-w-6xl px-5 py-12 grid grid-cols-2 sm:grid-cols-4 gap-8">
+      <div className="mx-auto max-w-6xl px-5 py-12 grid grid-cols-2 sm:grid-cols-5 gap-8">
         <div className="col-span-2">
           <span className="text-lg font-bold text-signal">EDGE</span>
           <p className="mt-3 text-sm text-ash max-w-xs">
