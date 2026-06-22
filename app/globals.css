@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+/* ════════════════════════════════════════════════════════════
+   EDGE design tokens — dark trading-terminal aesthetic.
+   Named for what they mean in the product, not just their hue.
+   ════════════════════════════════════════════════════════════ */
+@theme {
+  --color-void: #0a0a14;        /* page background */
+  --color-panel: #111124;       /* card surface */
+  --color-panel-soft: #14142a;  /* secondary surface, alt rows */
+  --color-hairline: #1e1e38;    /* borders, dividers */
+  --color-ash: #6b6b8c;         /* muted / tertiary text */
+  --color-mist: #c7c7dc;        /* soft body text */
+
+  --color-signal: #00c896;      /* primary teal — "the signal" */
+  --color-signal-dim: #0d3d2e;
+
+  --color-spark: #f0c040;       /* gold — Hot tier, flagship emphasis */
+  --color-spark-dim: #2b2410;
+
+  --color-pulse: #8b83e8;       /* violet — structure / secondary data */
+  --color-pulse-dim: #1e1b3a;
+
+  --color-alert: #e2554f;       /* red — risk / danger */
+  --color-alert-dim: #2b1414;
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-hairline);
+  }
+
+  html {
+    background: var(--color-void);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--color-void);
+    color: var(--color-mist);
+    font-family: var(--font-display);
+  }
+
+  /* Visible keyboard focus everywhere — never silently remove it */
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Tabular, monospace treatment for every figure on the site —
+     the one consistent typographic "tell" that this is a trading product. */
+  .num {
+    font-family: var(--font-mono);
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+  }
+
+  .glass-card {
+    background: var(--color-panel);
+    border: 1px solid var(--color-hairline);
+  }
+
+  .text-gradient-signal {
+    background: linear-gradient(135deg, var(--color-signal), #00ffc2);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/* Ticker tape marquee */
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.ticker-track {
+  animation: ticker-scroll 38s linear infinite;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+}
