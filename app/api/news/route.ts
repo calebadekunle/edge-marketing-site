@@ -1,4 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
+import { decode } from "he";
 
 // General market news via MarketWatch's dedicated syndication feed
 // (Dow Jones) — built specifically for RSS aggregation. Using this over
@@ -22,7 +23,8 @@ type NewsItem = {
 
 function stripCdata(val: unknown): string {
   if (typeof val !== "string") return "";
-  return val.replace(/^<!\[CDATA\[/, "").replace(/\]\]>$/, "").trim();
+  const stripped = val.replace(/^<!\[CDATA\[/, "").replace(/\]\]>$/, "").trim();
+  return decode(stripped);
 }
 
 export async function GET() {
@@ -51,7 +53,7 @@ export async function GET() {
     const rawItems = parsed?.rss?.channel?.item;
     const itemList = Array.isArray(rawItems) ? rawItems : rawItems ? [rawItems] : [];
 
-    const items: NewsItem[] = itemList.slice(0, 10).map((item: Record<string, unknown>) => ({
+    const items: NewsItem[] = itemList.slice(0, 6).map((item: Record<string, unknown>) => ({
       title: stripCdata(item.title) || "Untitled",
       link: typeof item.link === "string" ? item.link : "",
       pubDate: typeof item.pubDate === "string" ? item.pubDate : "",

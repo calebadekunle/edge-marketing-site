@@ -85,16 +85,22 @@ export default function NewsFeed() {
             href={item.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-start justify-between gap-4 px-5 py-3.5 border-b border-hairline last:border-b-0 hover:bg-panel-soft transition-colors"
+            className="group flex items-start gap-3 px-5 py-4 border-b border-hairline last:border-b-0 hover:bg-panel-soft transition-colors"
           >
-            <span className="text-sm text-mist/90 leading-snug">{item.title}</span>
-            <span className="flex flex-col items-end shrink-0 gap-0.5">
-              <span className="text-[10px] font-semibold text-ash whitespace-nowrap">
-                {item.source}
+            <span className="flex-1 min-w-0">
+              <span className="text-[14.5px] text-mist leading-snug line-clamp-2">
+                {item.title}
               </span>
-              <span className="num text-[10px] text-ash whitespace-nowrap">
-                {timeAgo(item.pubDate)}
+              <span className="mt-1.5 flex items-center gap-2">
+                <span className="num text-[11px] font-semibold text-signal/80">
+                  {item.source}
+                </span>
+                <span className="text-hairline text-[10px]">•</span>
+                <span className="num text-[11px] text-ash">{timeAgo(item.pubDate)}</span>
               </span>
+            </span>
+            <span className="text-ash group-hover:text-signal transition-colors text-sm pt-0.5 shrink-0">
+              ↗
             </span>
           </a>
         ))}
