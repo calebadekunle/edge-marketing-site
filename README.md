@@ -46,6 +46,36 @@ git remote add origin <your-repo-url>
 git push -u origin main
 ```
 
+## Live ticker tape (top of every page)
+
+The scrolling ticker under the nav shows real, live-polled quotes (refreshed
+every 30 seconds) via Alpaca's free Market Data API (IEX feed).
+
+**Setup required before this works:**
+
+1. Sign up at [alpaca.markets](https://alpaca.markets) — a free paper-trading
+   account is enough, no funding needed.
+2. Generate an API key pair from your dashboard.
+3. Locally: copy `.env.local.example` to `.env.local` and fill in your keys.
+4. On Vercel: add `ALPACA_API_KEY_ID` and `ALPACA_API_SECRET_KEY` as
+   Environment Variables in your project settings, then redeploy.
+
+**What this does and doesn't cover:**
+- Covers NASDAQ/NYSE-listed equities. Does **not** cover true OTC/pink-sheet
+  penny stocks — that needs Alpaca's paid OTC feed add-on. The symbols in
+  `app/api/quotes/route.ts` are liquid, lower-priced, actively-traded
+  small-caps as the closest free equivalent.
+- Free tier uses the IEX feed: genuinely real-time, but reflects one
+  exchange's tape rather than the full consolidated (SIP) tape.
+- **Important Alpaca quirk:** if even one symbol in the list becomes invalid
+  (delisted, renamed, typo), the *entire* request fails — Alpaca doesn't
+  skip bad symbols, it errors the whole batch. If the ticker ever goes
+  quiet, check `/api/quotes` directly first and verify every symbol in the
+  list is still actively trading.
+- If no API keys are set, or the upstream call fails, the ticker shows an
+  empty bar rather than fake data — by design, it should never display
+  placeholder prices that look real.
+
 ## What's a placeholder right now
 
 - **App Store / Google Play badges** (`/download`) — disabled, "coming soon."

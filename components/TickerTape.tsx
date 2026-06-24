@@ -1,25 +1,26 @@
 "use client";
 
-type Tick = {
+import { useEffect, useState } from "react";
+
+type Quote = {
   symbol: string;
-  price: string;
-  change: string;
-  up: boolean;
-  tier?: "watch" | "promising" | "hot";
+  price: number;
+  changePercent: number;
 };
 
-const TICKS: Tick[] = [
-  { symbol: "BBIG", price: "0.847", change: "+18.4%", up: true, tier: "hot" },
-  { symbol: "MMAT", price: "1.234", change: "+12.7%", up: true, tier: "hot" },
-  { symbol: "CLOV", price: "1.890", change: "+7.3%", up: true, tier: "promising" },
-  { symbol: "SNDL", price: "1.620", change: "+5.8%", up: true, tier: "promising" },
-  { symbol: "PHUN", price: "0.362", change: "-3.8%", up: false, tier: "watch" },
-  { symbol: "ZOM", price: "0.201", change: "-6.2%", up: false, tier: "watch" },
-  { symbol: "MVIS", price: "1.870", change: "+8.9%", up: true, tier: "promising" },
-  { symbol: "SPCE", price: "2.140", change: "+2.4%", up: true, tier: "watch" },
-  { symbol: "NKLA", price: "0.520", change: "-4.6%", up: false, tier: "watch" },
-  { symbol: "HYLN", price: "1.320", change: "+1.8%", up: true, tier: "watch" },
-];
+type FeedState =
+  | { status: "loading" }
+  | { status: "error" }
+  | { status: "ready"; quotes: Quote[] };
+
+const POLL_INTERVAL = 30 * 1000; // 30 seconds
+
+function tierFor(changePercent: number): "watch" | "promising" | "hot" {
+  const abs = Math.abs(changePercent);
+  if (abs >= 8) return "hot";
+  if (abs >= 3) return "promising";
+  return "watch";
+}
 
 const TIER_COLOR: Record<string, string> = {
   watch: "text-ash",
@@ -27,35 +28,71 @@ const TIER_COLOR: Record<string, string> = {
   hot: "text-spark",
 };
 
-function TickItem({ t }: { t: Tick }) {
+function TickItem({ q }: { q: Quote }) {
+  const up = q.changePercent >= 0;
+  const tier = tierFor(q.changePercent);
   return (
     <div className="flex items-center gap-2 px-4 py-2 whitespace-nowrap">
-      <span className="num text-xs font-semibold text-mist">{t.symbol}</span>
-      <span className="num text-xs text-ash">${t.price}</span>
-      <span className={`num text-xs font-semibold ${t.up ? "text-signal" : "text-alert"}`}>
-        {t.up ? "▲" : "▼"} {t.change}
+      <span className="num text-xs font-semibold text-mist">{q.symbol}</span>
+      <span className="num text-xs text-ash">${q.price.toFixed(2)}</span>
+      <span className={`num text-xs font-semibold ${up ? "text-signal" : "text-alert"}`}>
+        {up ? "▲" : "▼"} {Math.abs(q.changePercent).toFixed(1)}%
       </span>
-      {t.tier && (
-        <span className={`text-[9px] font-bold tracking-wider uppercase ${TIER_COLOR[t.tier]}`}>
-          {t.tier}
-        </span>
-      )}
+      <span className={`text-[9px] font-bold tracking-wider uppercase ${TIER_COLOR[tier]}`}>
+        {tier}
+      </span>
       <span className="text-hairline mx-1">·</span>
     </div>
   );
 }
 
 export default function TickerTape() {
-  const doubled = [...TICKS, ...TICKS];
+  const [state, setState] = useState<FeedState>({ status: "loading" });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const res = await fetch("/api/quotes", { cache: "no-store" });
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok || !data.ok) {
+          setState({ status: "error" });
+          return;
+        }
+        setState({ status: "ready", quotes: data.quotes });
+      } catch {
+        if (!cancelled) setState({ status: "error" });
+      }
+    }
+
+    load();
+    const id = setInterval(load, POLL_INTERVAL);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  if (state.status !== "ready") {
+    // Never show fake/placeholder prices — stay quiet instead.
+    return (
+      <div className="w-full h-9 border-b border-hairline bg-panel/60" role="status" />
+    );
+  }
+
+  const doubled = [...state.quotes, ...state.quotes];
+
   return (
     <div
       className="w-full overflow-hidden border-b border-hairline bg-panel/60"
       role="status"
-      aria-label="Simulated AI Discovery feed — illustrative data, not investment advice"
+      aria-label="Live market quotes via Alpaca (IEX feed) — not investment advice"
     >
       <div className="ticker-track flex w-max">
-        {doubled.map((t, i) => (
-          <TickItem t={t} key={i} />
+        {doubled.map((q, i) => (
+          <TickItem q={q} key={q.symbol + i} />
         ))}
       </div>
     </div>
