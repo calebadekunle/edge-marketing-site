@@ -19,7 +19,7 @@ export default function RiskDisclosureBox({
 }) {
   const s = SCHEMES[scheme];
   return (
-    <div className={`rounded-2xl border ${s.border} ${s.bg} p-5 sm:p-6`}>
+    <div className={`safe-fade rounded-2xl border ${s.border} ${s.bg} p-5 sm:p-6`}>
       <div className="flex items-start gap-3">
         <span
           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${s.text} border ${s.border} text-sm font-bold`}

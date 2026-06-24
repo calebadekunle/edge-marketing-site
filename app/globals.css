@@ -108,3 +108,76 @@
     animation: none;
   }
 }
+
+/* Mini sparkline — loops a draw-in / draw-out cycle continuously */
+@keyframes mini-spark-draw {
+  0% {
+    stroke-dashoffset: 64;
+  }
+  45% {
+    stroke-dashoffset: 0;
+  }
+  55% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -64;
+  }
+}
+
+.mini-spark-draw {
+  animation: mini-spark-draw 3.2s ease-in-out infinite;
+}
+
+/* Live pulse dot — gentle radar-style ping */
+@keyframes live-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  70% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.live-pulse {
+  animation: live-pulse 2.2s ease-out infinite;
+}
+
+/* Pure-CSS fade for content that must never depend on JS to become
+   visible — compliance disclosures use this instead of <Reveal>. Runs
+   natively even with JavaScript disabled, and always ends at opacity 1. */
+@keyframes safe-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.safe-fade {
+  animation: safe-fade-in 0.7s ease both;
+}
+
+/* Subtle breathing glow for primary CTAs */
+@keyframes cta-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 200, 150, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 14px rgba(0, 200, 150, 0.22);
+  }
+}
+
+.cta-pulse {
+  animation: cta-glow 2.4s ease-in-out infinite;
+}

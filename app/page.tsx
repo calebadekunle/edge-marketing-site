@@ -5,6 +5,7 @@ import StatCounter from "@/components/StatCounter";
 import DiscoveryGauge from "@/components/DiscoveryGauge";
 import RiskDisclosureBox from "@/components/RiskDisclosureBox";
 import HeroDiscoveryCard from "@/components/HeroDiscoveryCard";
+import Reveal from "@/components/Reveal";
 
 const SIGNALS = [
   { label: "Volume Surge", desc: "Relative volume vs. the trailing average, the first sign something is happening." },
@@ -41,7 +42,7 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/download"
-                className="rounded-xl bg-signal px-6 py-3.5 text-sm font-semibold text-void hover:bg-signal/90 transition-colors"
+                className="cta-pulse rounded-xl bg-signal px-6 py-3.5 text-sm font-semibold text-void hover:bg-signal/90 transition-colors"
               >
                 Get the app
               </Link>
@@ -62,32 +63,44 @@ export default function Home() {
       {/* Stat row */}
       <Section className="py-10 border-y border-hairline">
         <div className="grid grid-cols-3 gap-8">
-          <StatCounter label="Focus" value="Micro-Cap Equities" />
-          <StatCounter label="Differentiator" value="AI Discovery" color="text-signal" />
-          <StatCounter label="Broker of Record" value="Alpaca" color="text-spark" />
+          <Reveal delay={0}>
+            <StatCounter label="Focus" value="Micro-Cap Equities" />
+          </Reveal>
+          <Reveal delay={120}>
+            <StatCounter label="Differentiator" value="AI Discovery" color="text-signal" />
+          </Reveal>
+          <Reveal delay={240}>
+            <StatCounter label="Broker of Record" value="Alpaca" color="text-spark" />
+          </Reveal>
         </div>
       </Section>
 
       {/* Signal inputs */}
       <Section>
-        <Eyebrow>The flagship feature</Eyebrow>
-        <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-4">
-          Five signals. One score.
-        </h2>
-        <p className="text-ash max-w-2xl mb-10 leading-relaxed">
-          The Discovery Engine doesn&apos;t guess — it weighs the same signals
-          experienced traders already watch, continuously, across the entire
-          penny stock universe.
-        </p>
+        <Reveal>
+          <Eyebrow>The flagship feature</Eyebrow>
+          <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-4">
+            Five signals. One score.
+          </h2>
+          <p className="text-ash max-w-2xl mb-10 leading-relaxed">
+            The Discovery Engine doesn&apos;t guess — it weighs the same signals
+            experienced traders already watch, continuously, across the entire
+            penny stock universe.
+          </p>
+        </Reveal>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-          {SIGNALS.map((s) => (
-            <SignalCard key={s.label} label={s.label} desc={s.desc} />
+          {SIGNALS.map((s, i) => (
+            <Reveal key={s.label} delay={i * 90}>
+              <SignalCard label={s.label} desc={s.desc} index={i} />
+            </Reveal>
           ))}
         </div>
-        <DiscoveryGauge />
+        <Reveal>
+          <DiscoveryGauge />
+        </Reveal>
       </Section>
 
-      {/* Disclaimer */}
+      {/* Disclaimer — pure-CSS fade, never JS-gated (see RiskDisclosureBox) */}
       <Section className="py-10">
         <RiskDisclosureBox title="Not investment advice" scheme="spark">
           The Discovery Score is a real-time analytical signal, not a prediction or a
@@ -98,31 +111,37 @@ export default function Home() {
 
       {/* Platform features */}
       <Section className="border-t border-hairline">
-        <Eyebrow>The platform</Eyebrow>
-        <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-10">
-          Built for traders who move fast.
-        </h2>
+        <Reveal>
+          <Eyebrow>The platform</Eyebrow>
+          <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-10">
+            Built for traders who move fast.
+          </h2>
+        </Reveal>
         <div className="grid sm:grid-cols-2 gap-4">
-          {FEATURES.map((f) => (
-            <SignalCard key={f.label} label={f.label} desc={f.desc} />
+          {FEATURES.map((f, i) => (
+            <Reveal key={f.label} delay={i * 90}>
+              <SignalCard label={f.label} desc={f.desc} index={i} />
+            </Reveal>
           ))}
         </div>
       </Section>
 
       {/* CTA */}
       <Section className="text-center border-t border-hairline">
-        <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-4">
-          Trade with an edge.
-        </h2>
-        <p className="text-ash max-w-md mx-auto mb-8">
-          Join the waitlist and be first to know when EDGE opens up.
-        </p>
-        <Link
-          href="/download"
-          className="inline-block rounded-xl bg-signal px-8 py-3.5 text-sm font-semibold text-void hover:bg-signal/90 transition-colors"
-        >
-          Get early access
-        </Link>
+        <Reveal>
+          <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-4">
+            Trade with an edge.
+          </h2>
+          <p className="text-ash max-w-md mx-auto mb-8">
+            Join the waitlist and be first to know when EDGE opens up.
+          </p>
+          <Link
+            href="/download"
+            className="cta-pulse inline-block rounded-xl bg-signal px-8 py-3.5 text-sm font-semibold text-void hover:bg-signal/90 transition-colors"
+          >
+            Get early access
+          </Link>
+        </Reveal>
       </Section>
     </>
   );

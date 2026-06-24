@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const TIERS = [
   {
@@ -32,8 +32,37 @@ const TIERS = [
   },
 ] as const;
 
+const AUTO_INTERVAL = 2600;
+const RESUME_AFTER = 6000;
+
 export default function DiscoveryGauge() {
-  const [active, setActive] = useState<number>(1);
+  const [active, setActive] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
+  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setAutoPlay(false);
+      setActive(1);
+      return;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!autoPlay) return;
+    const id = setInterval(() => {
+      setActive((a) => (a + 1) % TIERS.length);
+    }, AUTO_INTERVAL);
+    return () => clearInterval(id);
+  }, [autoPlay]);
+
+  const handleSelect = (i: number) => {
+    setActive(i);
+    setAutoPlay(false);
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    resumeTimer.current = setTimeout(() => setAutoPlay(true), RESUME_AFTER);
+  };
+
   const tier = TIERS[active];
 
   return (
@@ -49,8 +78,8 @@ export default function DiscoveryGauge() {
         {TIERS.map((t, i) => (
           <button
             key={t.key}
-            onClick={() => setActive(i)}
-            className={`flex-1 rounded-xl border py-3 text-center transition-colors ${
+            onClick={() => handleSelect(i)}
+            className={`flex-1 rounded-xl border py-3 text-center transition-colors duration-500 ${
               active === i ? `${t.border} ${t.bg}` : "border-hairline bg-transparent hover:bg-panel-soft"
             }`}
           >
