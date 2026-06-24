@@ -4,9 +4,13 @@ import { useEffect, useRef, useState } from "react";
 
 // Fixed uptrend path so the line shape is consistent every loop —
 // only how much of it is "revealed" changes, in sync with the score.
+// This illustrates the Discovery Score animation, not a real price chart.
 const PATH_D =
   "M0,86 L14,82 L28,84 L42,74 L56,76 L70,62 L84,66 L98,48 L112,52 L126,38 L140,30 L154,34 L168,18 L182,8";
-const PATH_LEN = 320; // approximate length, used for dash animation
+const PATH_LEN = 320;
+
+const SYMBOL = "PRSO";
+const NAME = "Peraso Inc.";
 
 function tierForScore(score: number) {
   if (score >= 75) return { label: "Hot", color: "var(--color-spark)" };
@@ -14,10 +18,20 @@ function tierForScore(score: number) {
   return { label: "Watch", color: "var(--color-ash)" };
 }
 
+type PriceState =
+  | { status: "loading" }
+  | { status: "error" }
+  | { status: "ready"; price: number; changePercent: number };
+
 export default function HeroDiscoveryCard() {
+  // Score animation is illustrative only — there's no real AI Discovery
+  // Engine running yet (that's the product roadmap). Clearly labeled below.
   const [score, setScore] = useState(0);
-  const [price, setPrice] = useState(1.234);
   const reducedMotion = useRef(false);
+
+  // Price is real — fetched from the same Alpaca-backed endpoint as the
+  // ticker tape, refreshed every 30s. Never falls back to fake numbers.
+  const [priceState, setPriceState] = useState<PriceState>({ status: "loading" });
 
   useEffect(() => {
     reducedMotion.current = window.matchMedia(
@@ -25,51 +39,91 @@ export default function HeroDiscoveryCard() {
     ).matches;
 
     if (reducedMotion.current) {
-      setScore(82);
-      setPrice(1.41);
+      setScore(67);
       return;
     }
 
     let frame = 0;
     const id = setInterval(() => {
       frame += 1;
-      const cycle = frame % 140; // ~7s loop at 50ms tick
+      const cycle = frame % 140;
       const pct = Math.min(100, (cycle / 100) * 100);
       setScore(Math.round(pct));
-      setPrice(1.234 + (pct / 100) * 0.18 + Math.sin(frame / 6) * 0.004);
     }, 50);
 
     return () => clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const res = await fetch("/api/quotes", { cache: "no-store" });
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok || !data.ok) {
+          setPriceState({ status: "error" });
+          return;
+        }
+        const match = data.quotes.find((q: { symbol: string }) => q.symbol === SYMBOL);
+        if (!match) {
+          setPriceState({ status: "error" });
+          return;
+        }
+        setPriceState({
+          status: "ready",
+          price: match.price,
+          changePercent: match.changePercent,
+        });
+      } catch {
+        if (!cancelled) setPriceState({ status: "error" });
+      }
+    }
+
+    load();
+    const id = setInterval(load, 30 * 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
   const tier = tierForScore(score);
   const dashOffset = PATH_LEN - (Math.min(score, 100) / 100) * PATH_LEN;
-  const change = (((price - 1.234) / 1.234) * 100).toFixed(1);
+  const up = priceState.status === "ready" && priceState.changePercent >= 0;
 
   return (
-    <div
-      className="glass-card rounded-2xl p-5 w-full max-w-sm"
-      aria-hidden="true"
-    >
+    <div className="glass-card rounded-2xl p-5 w-full max-w-sm">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <div className="font-bold text-mist">MMAT</div>
-          <div className="text-[11px] text-ash">Meta Materials</div>
+          <div className="font-bold text-mist">{SYMBOL}</div>
+          <div className="text-[11px] text-ash">{NAME}</div>
         </div>
         <div className="text-right">
-          <div className="num font-semibold text-mist">${price.toFixed(3)}</div>
-          <div className="num text-xs font-semibold text-signal">+{change}%</div>
+          {priceState.status === "ready" ? (
+            <>
+              <div className="num font-semibold text-mist">
+                ${priceState.price.toFixed(3)}
+              </div>
+              <div
+                className={`num text-xs font-semibold ${up ? "text-signal" : "text-alert"}`}
+              >
+                {up ? "+" : ""}
+                {priceState.changePercent.toFixed(1)}%
+              </div>
+            </>
+          ) : (
+            <div className="num text-xs text-ash">
+              {priceState.status === "loading" ? "loading…" : "—"}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="relative h-24 mb-1">
         <svg viewBox="0 0 182 96" className="w-full h-full overflow-visible">
-          <path
-            d={PATH_D}
-            fill="none"
-            stroke="var(--color-hairline)"
-            strokeWidth="2"
-          />
+          <path d={PATH_D} fill="none" stroke="var(--color-hairline)" strokeWidth="2" />
           <path
             d={PATH_D}
             fill="none"
@@ -83,7 +137,7 @@ export default function HeroDiscoveryCard() {
         </svg>
       </div>
 
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-1.5">
         <span className="text-[10px] font-bold uppercase tracking-wider text-ash">
           Discovery Score
         </span>
@@ -93,6 +147,9 @@ export default function HeroDiscoveryCard() {
         >
           {tier.label}
         </span>
+      </div>
+      <div className="text-[9.5px] text-ash/60 italic mb-2">
+        Illustrative — not a live model output
       </div>
       <div className="h-1.5 rounded-full bg-panel-soft overflow-hidden">
         <div

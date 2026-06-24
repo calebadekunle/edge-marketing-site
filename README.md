@@ -46,6 +46,39 @@ git remote add origin <your-repo-url>
 git push -u origin main
 ```
 
+## Hero card (home page, top of page)
+
+The "PRSO" card next to the headline shows a **real, live price** for
+Peraso Inc. — genuinely under $1, NASDAQ-listed, pulled from the same
+`/api/quotes` endpoint as the ticker tape — alongside an **illustrative**
+Discovery Score animation.
+
+This split is intentional, not a shortcut: the AI Discovery Engine itself
+doesn't exist as a running backend yet — it's the flagship feature on the
+roadmap (see Section 9 of the whitepaper). The score/tier animation is
+clearly labeled "Illustrative — not a live model output" so it's never
+confused with real product output.
+
+**Why PRSO specifically, and a real maintenance note:** NASDAQ requires
+listed stocks to stay above $1 or face a delisting clock (deficiency
+notice after 30 consecutive days under $1, then a compliance period to
+cure it). That means a stock that's genuinely sub-$1 *and* still
+exchange-listed (not OTC) is inherently a moving target — there's no
+permanently-safe choice here. PRSO was verified actively trading on
+NASDAQ at ~$0.93 with reasonable volume when this was built, but:
+
+- **Check `/api/quotes` periodically.** If PRSO ever gets delisted, the
+  *entire* batch request fails (see the Alpaca quirk noted below) — not
+  just PRSO's price, the whole ticker tape goes quiet too.
+- If that happens, swap `PRSO` for another current sub-$1, NASDAQ/NYSE-
+  listed ticker in both `SYMBOLS` (in `app/api/quotes/route.ts`) and
+  `SYMBOL`/`NAME` (in `components/HeroDiscoveryCard.tsx`). A live
+  screener like MarketBeat's "Stocks Under $1" page is the fastest way
+  to find a current, verified candidate — don't reuse an old list, prices
+  here move fast and tickers fall off NASDAQ regularly.
+- If PRSO trades back above $1, nothing breaks technically — it just
+  won't look as "penny stock" as intended until it dips again.
+
 ## Live ticker tape (top of every page)
 
 The scrolling ticker under the nav shows real, live-polled quotes (refreshed

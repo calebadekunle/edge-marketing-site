@@ -15,7 +15,7 @@
 //   ALPACA_API_KEY_ID
 //   ALPACA_API_SECRET_KEY
 
-const SYMBOLS = ["NOK", "PLUG", "SIRI", "SOFI", "RIOT", "MARA", "NIO", "LCID", "RIVN", "GSAT"];
+const SYMBOLS = ["PRSO", "NOK", "PLUG", "SIRI", "SOFI", "RIOT", "MARA", "NIO", "LCID", "RIVN", "GSAT"];
 
 export const dynamic = "force-dynamic";
 
