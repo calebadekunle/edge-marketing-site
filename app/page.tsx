@@ -6,6 +6,7 @@ import DiscoveryGauge from "@/components/DiscoveryGauge";
 import RiskDisclosureBox from "@/components/RiskDisclosureBox";
 import HeroDiscoveryCard from "@/components/HeroDiscoveryCard";
 import Reveal from "@/components/Reveal";
+import NewsFeed from "@/components/NewsFeed";
 
 const SIGNALS = [
   { label: "Volume Surge", desc: "Relative volume vs. the trailing average, the first sign something is happening." },
@@ -142,6 +143,18 @@ export default function Home() {
             Get early access
           </Link>
         </Reveal>
+      </Section>
+
+      {/* Live market news — self-updating, real headlines via RSS */}
+      <Section className="border-t border-hairline">
+        <Eyebrow>Stay informed</Eyebrow>
+        <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-4">
+          The market, as it happens.
+        </h2>
+        <p className="text-ash max-w-2xl mb-10 leading-relaxed">
+          Real headlines, refreshed automatically — no need to reload the page.
+        </p>
+        <NewsFeed />
       </Section>
     </>
   );
