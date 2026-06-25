@@ -128,15 +128,16 @@ every 30 seconds) via Alpaca's free Market Data API (IEX feed).
 
 - **App Store / Google Play badges** (`/download`) — disabled, "coming soon."
   The real app isn't public yet.
-- **Waitlist form** — captures email into local component state only. No
-  backend wired up. Replace with a real provider (e.g. Resend, Mailchimp,
-  ConvertKit, or a simple API route + database) before launch.
-- **Contact form** — same as above, local state only, no email delivery wired up.
 - **Pricing** — illustrative tiers/features, not final numbers.
 - **"Get the app" CTA** — currently points to `/download` (the waitlist
   page). Update this once there's a real app URL or store listing to link to.
 - **Terms & Conditions / Privacy Policy** — draft templates only. Must be
   reviewed and finalized by qualified legal counsel before public launch.
+- **Mailchimp / Outlook SMTP / webhook delivery** — not built yet. Submissions
+  currently land in the local SQLite database only (see below) — no outbound
+  email or third-party CRM sync happens automatically.
+- **Admin sections "Campaigns," "Subscriber CRM," "Analytics," "Compliance"**
+  — visible in the admin sidebar as grayed-out "Soon" items, not built yet.
 
 ## Live market news (`/` home page, bottom section)
 
@@ -163,3 +164,73 @@ If it returns `{"ok": false, ...}`, check the `error` field. Common fixes:
 - Verify the current licensing/usage terms of whichever feed you use
   before relying on it in production — some financial news feeds restrict
   commercial use.
+
+## Self-hosted backend & admin dashboard
+
+The waitlist and contact forms submit to real API routes
+(`app/api/waitlist`, `app/api/contact`), which write to a local SQLite
+database via `better-sqlite3` (`lib/db.ts`). No external service required —
+just persistent disk on whatever machine runs `npm start`.
+
+**First-time setup** — add two new variables to `.env.local` (see
+`.env.local.example`):
+
+```
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=pick_something_only_you_know
+```
+
+These protect `/admin` and `/api/admin/*` with HTTP Basic Auth. If either is
+missing, the admin area is blocked entirely (fails closed, not open).
+
+`npm run dev` and `npm run build` automatically run `scripts/check-env.js`
+first (via npm's `predev`/`prebuild` hooks) and print a ✓/✗/⚠ summary of
+which `.env.local` values are set. It only warns — it never blocks the
+command — but it means a forgotten or still-placeholder value shows up
+immediately instead of silently breaking `/admin` later. Run it manually
+anytime with `npm run check-env`.
+
+**What each form captures**, beyond name/email/message:
+- `ip_address` — from the `x-forwarded-for` header (works behind Vercel or
+  your own reverse proxy on a VPS)
+- `referrer` — `document.referrer` from the browser, falling back to the
+  request's `Referer` header
+- `consent` — both forms now require checking "I agree to the Privacy
+  Policy" before submitting; the API rejects the request otherwise
+
+**Admin dashboard** (`/admin`) now has its own sidebar shell, separate from
+the public site's nav/footer:
+- **Overview** — stat cards (signups, contact submissions, consent rate,
+  last signup)
+- **Submissions** — full tables for both forms, including IP/referrer/consent
+- **Settings** — live color editor for the public site's theme (see below)
+- Campaigns / Subscriber CRM / Analytics / Compliance are listed but grayed
+  out — not built yet, see "What's a placeholder right now"
+
+**Two layers of auth checking, on purpose:** `proxy.ts` (Next.js 16's
+renamed `middleware.ts`) is the fast first line of defense, blocking
+unauthenticated requests before they ever reach a page or API route. But
+per Next.js's own guidance — after a real 2025 vulnerability that let
+attackers bypass middleware entirely with a crafted header — sensitive
+pages and the settings API also re-check the same credentials directly
+(`lib/adminAuth.ts`). A future bug in the proxy layer alone can't expose
+lead data on its own.
+
+## Editable site theme (the CSS color question)
+
+The design system was already built on Tailwind v4 `@theme` tokens
+(`app/globals.css`), which Tailwind compiles into real CSS custom
+properties under `:root`. `/admin/settings` lets you override any of them
+— page background, card surfaces, the teal/gold/violet/red accents — without
+touching code or redeploying.
+
+How it works: the public site's root layout (`app/(marketing)/layout.tsx`)
+reads the current values from the `site_settings` table on every request
+and injects an inline `<style>` tag with `!important` overrides, which wins
+over the compiled defaults regardless of `<head>` tag ordering. Save a
+change in Settings, refresh the homepage, see it immediately.
+
+The admin dashboard itself keeps its own fixed dark navy/teal look and
+doesn't read from this table — the editable theme only applies to the
+public marketing site.
+

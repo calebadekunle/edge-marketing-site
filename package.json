@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "check-env": "node scripts/check-env.js",
+    "predev": "node scripts/check-env.js",
+    "prebuild": "node scripts/check-env.js",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -11,6 +14,7 @@
   "dependencies": {
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@fontsource/space-grotesk": "^5.2.10",
+    "better-sqlite3": "^12.11.1",
     "fast-xml-parser": "^5.9.3",
     "he": "^1.2.0",
     "next": "16.2.9",
@@ -19,6 +23,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/he": "^1.2.3",
     "@types/node": "^20",
     "@types/react": "^19",

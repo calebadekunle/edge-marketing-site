@@ -37,6 +37,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local sqlite database (waitlist/contact/settings) — never commit real
+# lead data to git
+/data/*.db
+/data/*.db-shm
+/data/*.db-wal
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
