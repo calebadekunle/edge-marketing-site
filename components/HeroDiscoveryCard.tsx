@@ -9,19 +9,16 @@ const PATH_D =
   "M0,86 L14,82 L28,84 L42,74 L56,76 L70,62 L84,66 L98,48 L112,52 L126,38 L140,30 L154,34 L168,18 L182,8";
 const PATH_LEN = 320;
 
-const SYMBOL = "PRSO";
-const NAME = "Peraso Inc.";
-
 function tierForScore(score: number) {
   if (score >= 75) return { label: "Hot", color: "var(--color-spark)" };
   if (score >= 40) return { label: "Promising", color: "var(--color-signal)" };
   return { label: "Watch", color: "var(--color-ash)" };
 }
 
-type PriceState =
+type PickState =
   | { status: "loading" }
   | { status: "error" }
-  | { status: "ready"; price: number; changePercent: number };
+  | { status: "ready"; symbol: string; name: string; price: number; changePercent: number };
 
 export default function HeroDiscoveryCard() {
   // Score animation is illustrative only — there's no real AI Discovery
@@ -29,9 +26,10 @@ export default function HeroDiscoveryCard() {
   const [score, setScore] = useState(0);
   const reducedMotion = useRef(false);
 
-  // Price is real — fetched from the same Alpaca-backed endpoint as the
-  // ticker tape, refreshed every 30s. Never falls back to fake numbers.
-  const [priceState, setPriceState] = useState<PriceState>({ status: "loading" });
+  // Symbol + price are real — a daily-rotating sub-$1 pick fetched from
+  // the same Alpaca-backed endpoint as the ticker tape, refreshed every
+  // 30s. Never falls back to fake numbers.
+  const [pick, setPick] = useState<PickState>({ status: "loading" });
 
   useEffect(() => {
     reducedMotion.current = window.matchMedia(
@@ -62,22 +60,19 @@ export default function HeroDiscoveryCard() {
         const res = await fetch("/api/quotes", { cache: "no-store" });
         const data = await res.json();
         if (cancelled) return;
-        if (!res.ok || !data.ok) {
-          setPriceState({ status: "error" });
+        if (!res.ok || !data.heroPick) {
+          setPick({ status: "error" });
           return;
         }
-        const match = data.quotes.find((q: { symbol: string }) => q.symbol === SYMBOL);
-        if (!match) {
-          setPriceState({ status: "error" });
-          return;
-        }
-        setPriceState({
+        setPick({
           status: "ready",
-          price: match.price,
-          changePercent: match.changePercent,
+          symbol: data.heroPick.symbol,
+          name: data.heroPick.name,
+          price: data.heroPick.price,
+          changePercent: data.heroPick.changePercent,
         });
       } catch {
-        if (!cancelled) setPriceState({ status: "error" });
+        if (!cancelled) setPick({ status: "error" });
       }
     }
 
@@ -91,31 +86,35 @@ export default function HeroDiscoveryCard() {
 
   const tier = tierForScore(score);
   const dashOffset = PATH_LEN - (Math.min(score, 100) / 100) * PATH_LEN;
-  const up = priceState.status === "ready" && priceState.changePercent >= 0;
+  const up = pick.status === "ready" && pick.changePercent >= 0;
 
   return (
     <div className="glass-card rounded-2xl p-5 w-full max-w-sm">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <div className="font-bold text-mist">{SYMBOL}</div>
-          <div className="text-[11px] text-ash">{NAME}</div>
+          <div className="font-bold text-mist">
+            {pick.status === "ready" ? pick.symbol : "—"}
+          </div>
+          <div className="text-[11px] text-ash">
+            {pick.status === "ready" ? pick.name : "Loading today's pick…"}
+          </div>
         </div>
         <div className="text-right">
-          {priceState.status === "ready" ? (
+          {pick.status === "ready" ? (
             <>
               <div className="num font-semibold text-mist">
-                ${priceState.price.toFixed(3)}
+                ${pick.price.toFixed(3)}
               </div>
               <div
                 className={`num text-xs font-semibold ${up ? "text-signal" : "text-alert"}`}
               >
                 {up ? "+" : ""}
-                {priceState.changePercent.toFixed(1)}%
+                {pick.changePercent.toFixed(1)}%
               </div>
             </>
           ) : (
             <div className="num text-xs text-ash">
-              {priceState.status === "loading" ? "loading…" : "—"}
+              {pick.status === "loading" ? "loading…" : "—"}
             </div>
           )}
         </div>

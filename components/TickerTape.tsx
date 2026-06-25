@@ -57,7 +57,7 @@ export default function TickerTape() {
         const res = await fetch("/api/quotes", { cache: "no-store" });
         const data = await res.json();
         if (cancelled) return;
-        if (!res.ok || !data.ok) {
+        if (!res.ok || !data.quotes) {
           setState({ status: "error" });
           return;
         }
