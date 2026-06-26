@@ -234,3 +234,54 @@ The admin dashboard itself keeps its own fixed dark navy/teal look and
 doesn't read from this table — the editable theme only applies to the
 public marketing site.
 
+## Email notifications
+
+`/admin/settings` has a second section, below the theme editor, for
+configuring an SMTP server. When enabled, every waitlist signup and contact
+submission triggers an email to whatever address you configure — no more
+needing to remember to check `/admin/submissions`.
+
+Works with any standard SMTP provider — Microsoft 365/Outlook, Gmail, Zoho,
+a regular web-hosting mailbox, or a transactional provider like Resend or
+Postmark. Configure Host, Port, Username, Password, From address, and where
+to send notifications, then hit **Send test email** to confirm it actually
+works before relying on it.
+
+**Important if you're using Microsoft 365/Outlook specifically:** Microsoft
+is in the middle of retiring username+password ("Basic Auth") SMTP login.
+As of mid-2026, it still works normally for existing tenants, but Microsoft
+plans to disable it **by default at the end of December 2026** (admins can
+manually re-enable it after that), with full removal sometime in the second
+half of 2027. Two practical implications:
+- If this stops working later in 2026 with an error like `535 5.7.3
+  Authentication unsuccessful` or `550 5.7.30 Basic authentication is not
+  supported`, that's almost certainly this deprecation, not a bug here.
+- If your M365 tenant has never used SMTP AUTH before, it may already be
+  disabled by default (Microsoft has been turning it off tenant-by-tenant
+  for unused mailboxes since 2021) — an admin may need to re-enable "SMTP
+  AUTH Client Submission" for the mailbox in the Exchange admin center first.
+
+If/when this becomes a hassle, the cleanest long-term fix is routing through
+a transactional email provider's SMTP relay instead (Resend, Postmark,
+SendGrid) — same Host/Port/Username/Password fields here, just pointed at
+their servers instead of `smtp.office365.com`, and not affected by
+Microsoft's timeline at all.
+
+**Security note:** like the lead data already stored in this database, the
+SMTP password is saved in plain text in the local SQLite file — gated by
+the same admin Basic Auth and the same "never committed to git" boundary,
+not a stronger guarantee than that. Use a dedicated mailbox or app-specific
+credential here, not your primary daily-driver password.
+
+A failed or unreachable mail server never blocks a form submission — the
+waitlist/contact APIs always save the lead first, then attempt the email
+notification separately, and swallow any email error rather than surface
+it to the visitor.
+
+**Worth doing before this goes properly public:** there's currently no rate
+limiting or CAPTCHA on the public forms, so someone could script repeated
+submissions to flood your inbox or get your SMTP credentials flagged for
+abuse by your provider. Not built yet — worth bundling with the form
+builder work later.
+
+

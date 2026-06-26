@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addContactSubmission } from "@/lib/db";
 import { getClientIp, getReferrer } from "@/lib/clientInfo";
+import { sendAdminNotification, contactNotification } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,10 @@ export async function POST(req: NextRequest) {
     referrer,
     consent: true,
   });
+
+  await sendAdminNotification(
+    contactNotification({ name: cleanName, email: cleanEmail, message: cleanMessage, ip, referrer })
+  );
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }

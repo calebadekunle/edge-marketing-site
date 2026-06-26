@@ -40,6 +40,19 @@ db.exec(`
     value TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS smtp_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    enabled INTEGER NOT NULL DEFAULT 0,
+    host TEXT,
+    port INTEGER,
+    secure INTEGER NOT NULL DEFAULT 0,
+    username TEXT,
+    password TEXT,
+    from_email TEXT,
+    notify_email TEXT,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 export type WaitlistSignup = {
@@ -175,6 +188,106 @@ export function setThemeSetting(key: string, value: string) {
     `INSERT INTO site_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`
   ).run(key, value);
+}
+
+// ── SMTP settings (email notifications) ──────────────────────────────────
+// Single-row table (id is always 1). The password is stored here in plain
+// text in the local SQLite file — consistent with how this project already
+// stores lead PII, gated by the same admin Basic Auth and the same "never
+// committed to git" boundary, not a stronger guarantee than that. Use a
+// dedicated/app-specific mailbox credential here, not a primary daily
+// account password.
+
+export type SmtpSettings = {
+  enabled: boolean;
+  host: string | null;
+  port: number | null;
+  secure: boolean;
+  username: string | null;
+  password: string | null;
+  from_email: string | null;
+  notify_email: string | null;
+};
+
+export type SmtpSettingsSafe = Omit<SmtpSettings, "password"> & {
+  password_set: boolean;
+};
+
+type SmtpRow = {
+  enabled: number;
+  host: string | null;
+  port: number | null;
+  secure: number;
+  username: string | null;
+  password: string | null;
+  from_email: string | null;
+  notify_email: string | null;
+};
+
+function rowToSmtpSettings(row: SmtpRow | undefined): SmtpSettings {
+  return {
+    enabled: !!row?.enabled,
+    host: row?.host ?? null,
+    port: row?.port ?? null,
+    secure: !!row?.secure,
+    username: row?.username ?? null,
+    password: row?.password ?? null,
+    from_email: row?.from_email ?? null,
+    notify_email: row?.notify_email ?? null,
+  };
+}
+
+// Full settings INCLUDING the real password — server-side use only
+// (the actual email-sending code). Never expose this over an API response.
+export function getSmtpSettings(): SmtpSettings {
+  const row = db.prepare(`SELECT * FROM smtp_settings WHERE id = 1`).get() as
+    | SmtpRow
+    | undefined;
+  return rowToSmtpSettings(row);
+}
+
+// Safe to send to the browser — password is replaced with a boolean.
+export function getSmtpSettingsSafe(): SmtpSettingsSafe {
+  const { password, ...rest } = getSmtpSettings();
+  return { ...rest, password_set: !!password };
+}
+
+export function setSmtpSettings(input: {
+  enabled: boolean;
+  host: string | null;
+  port: number | null;
+  secure: boolean;
+  username: string | null;
+  password?: string | null; // omit/undefined = keep existing password
+  from_email: string | null;
+  notify_email: string | null;
+}) {
+  const existing = getSmtpSettings();
+  const password = input.password === undefined ? existing.password : input.password;
+
+  db.prepare(
+    `INSERT INTO smtp_settings (id, enabled, host, port, secure, username, password, from_email, notify_email, updated_at)
+     VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+     ON CONFLICT(id) DO UPDATE SET
+       enabled = excluded.enabled,
+       host = excluded.host,
+       port = excluded.port,
+       secure = excluded.secure,
+       username = excluded.username,
+       password = excluded.password,
+       from_email = excluded.from_email,
+       notify_email = excluded.notify_email,
+       updated_at = datetime('now')`
+  ).run(
+    input.enabled ? 1 : 0,
+    input.host,
+    input.port,
+    input.secure ? 1 : 0,
+    input.username,
+    password,
+    input.from_email,
+    input.notify_email
+  );
 }
 
 export default db;

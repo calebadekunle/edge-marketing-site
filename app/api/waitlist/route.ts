@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addWaitlistSignup, isEmailOnWaitlist } from "@/lib/db";
 import { getClientIp, getReferrer } from "@/lib/clientInfo";
+import { sendAdminNotification, waitlistNotification } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,11 @@ export async function POST(req: NextRequest) {
   const referrer = getReferrer(req, typeof bodyReferrer === "string" ? bodyReferrer : null);
 
   addWaitlistSignup({ email: cleanEmail, ip_address: ip, referrer, consent: true });
+
+  // Awaited (not fire-and-forget) so this completes before a serverless
+  // function can exit — but sendAdminNotification never throws, so a
+  // misconfigured or unreachable mail server can't fail this request.
+  await sendAdminNotification(waitlistNotification({ email: cleanEmail, ip, referrer }));
 
   return NextResponse.json({ ok: true }, { status: 201 });
 }
