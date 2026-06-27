@@ -25,6 +25,8 @@
 //   ALPACA_API_KEY_ID
 //   ALPACA_API_SECRET_KEY
 
+import { getAlpacaSettings } from "@/lib/db";
+
 const STABLE_SYMBOLS = ["NOK", "PLUG", "SIRI", "SOFI", "RIOT", "MARA", "NIO", "LCID", "RIVN", "GSAT"];
 
 // Rotation pool for the hero card. Each entry must be re-verified
@@ -86,11 +88,10 @@ function priceAndChange(snap: AlpacaSnapshot | undefined): { price: number; chan
 }
 
 export async function GET() {
-  const keyId = process.env.ALPACA_API_KEY_ID;
-  const secretKey = process.env.ALPACA_API_SECRET_KEY;
+  const { key_id: keyId, secret_key: secretKey } = getAlpacaSettings();
 
   if (!keyId || !secretKey) {
-    const error = "Missing ALPACA_API_KEY_ID / ALPACA_API_SECRET_KEY env vars";
+    const error = "Alpaca API credentials not configured — set them in /admin/api-keys or via ALPACA_API_KEY_ID/ALPACA_API_SECRET_KEY env vars";
     return Response.json(
       { ok: false, quotes: null, quotesError: error, heroPick: null, heroPickError: error },
       { status: 500 }

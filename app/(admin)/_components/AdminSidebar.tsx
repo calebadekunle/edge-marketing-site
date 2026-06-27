@@ -8,6 +8,7 @@ const NAV = [
   { href: "/admin/submissions", label: "Submissions", live: true },
   { href: "/admin/homepage", label: "Homepage", live: true },
   { href: "/admin/settings", label: "Settings", live: true },
+  { href: "/admin/api-keys", label: "API Keys", live: true },
   { href: "/admin/seo", label: "SEO", live: true },
   { href: "/admin/webhooks", label: "Webhooks", live: true },
   { href: "/admin/analytics", label: "Analytics", live: true },

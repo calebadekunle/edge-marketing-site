@@ -118,6 +118,13 @@ db.exec(`
     content TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS alpaca_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    key_id TEXT,
+    secret_key TEXT,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 export type WaitlistSignup = {
@@ -965,4 +972,56 @@ export function setHomepageContent(content: HomepageContent) {
     `INSERT INTO homepage_content (id, content, updated_at) VALUES (1, ?, datetime('now'))
      ON CONFLICT(id) DO UPDATE SET content = excluded.content, updated_at = datetime('now')`
   ).run(JSON.stringify(content));
+}
+
+// ── Alpaca settings ───────────────────────────────────────────────────────
+// Previously these only lived in process.env (ALPACA_API_KEY_ID /
+// ALPACA_API_SECRET_KEY), with no admin UI at all. Falls back to the env
+// vars if nothing's saved in the database yet, so existing .env.local
+// setups keep working exactly as before — this is additive, not a
+// breaking change for anyone who hasn't touched the new UI.
+
+export type AlpacaSettings = { key_id: string | null; secret_key: string | null };
+export type AlpacaSettingsSafe = { key_id: string | null; secret_key_set: boolean; source: "database" | "env" | "none" };
+
+export function getAlpacaSettings(): AlpacaSettings {
+  const row = db.prepare(`SELECT key_id, secret_key FROM alpaca_settings WHERE id = 1`).get() as
+    | { key_id: string | null; secret_key: string | null }
+    | undefined;
+
+  if (row?.key_id && row?.secret_key) {
+    return { key_id: row.key_id, secret_key: row.secret_key };
+  }
+  // Fall back to env vars if the database has nothing saved yet.
+  return {
+    key_id: process.env.ALPACA_API_KEY_ID || null,
+    secret_key: process.env.ALPACA_API_SECRET_KEY || null,
+  };
+}
+
+export function getAlpacaSettingsSafe(): AlpacaSettingsSafe {
+  const row = db.prepare(`SELECT key_id, secret_key FROM alpaca_settings WHERE id = 1`).get() as
+    | { key_id: string | null; secret_key: string | null }
+    | undefined;
+
+  if (row?.key_id && row?.secret_key) {
+    return { key_id: row.key_id, secret_key_set: true, source: "database" };
+  }
+  if (process.env.ALPACA_API_KEY_ID && process.env.ALPACA_API_SECRET_KEY) {
+    return { key_id: process.env.ALPACA_API_KEY_ID, secret_key_set: true, source: "env" };
+  }
+  return { key_id: null, secret_key_set: false, source: "none" };
+}
+
+export function setAlpacaSettings(input: { key_id: string | null; secret_key?: string | null }) {
+  const existing = getAlpacaSettings();
+  const secretKey = input.secret_key === undefined ? existing.secret_key : input.secret_key;
+
+  db.prepare(
+    `INSERT INTO alpaca_settings (id, key_id, secret_key, updated_at) VALUES (1, ?, ?, datetime('now'))
+     ON CONFLICT(id) DO UPDATE SET
+       key_id = excluded.key_id,
+       secret_key = excluded.secret_key,
+       updated_at = datetime('now')`
+  ).run(input.key_id, secretKey);
 }

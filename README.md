@@ -582,4 +582,39 @@ reference (`var(--color-signal)` etc.), so if you change the site's theme
 colors in `/admin/settings`, these charts pick up the same palette
 automatically rather than needing a separate edit.
 
+## API Keys directory
+
+A new live page, `/admin/api-keys` — answers "is this hardcoded, and where
+are all our keys" in one place, since they'd ended up scattered across
+several different settings sections with no single overview.
+
+**Two real categories, shown separately:**
+1. **Alpaca — actually migrated here.** This one genuinely was hardcoded:
+   it only ever lived in `.env.local`, with zero admin UI, since before any
+   of this admin work started. Now it has a real editable form, stored in
+   the database like everything else. **Backward compatible on purpose** —
+   if nothing's saved here yet, it falls back to reading the old env vars,
+   so nothing breaks for a setup that's never touched this new page. I
+   tested the actual switch: confirmed it reads from env first, saved new
+   credentials through the form, confirmed the source flag flipped to
+   "database," and confirmed `/api/quotes` picked up the new key for a real
+   outbound request to Alpaca's servers (got a real 403 back with fake test
+   credentials — proving the new key was actually used, not silently
+   ignored).
+2. **SMTP, Mailchimp, reCAPTCHA, Google Analytics, Webhooks — already not
+   hardcoded.** These were already saved in the database and editable on
+   their own settings pages; this directory just lists them with status
+   dots and links straight to where you'd actually change each one
+   (`/admin/settings#email`, `#mailchimp`, `#recaptcha`, `/admin/seo`,
+   `/admin/webhooks`). Deliberately didn't duplicate each one's edit form
+   into a second page — that's a maintenance trap where the two copies
+   drift out of sync over time.
+
+**Admin login (username/password) stays env-var only, on purpose** — and
+the page says so explicitly rather than silently omitting it. Editing your
+own login credentials from inside a page you needed those same credentials
+to reach has a real lockout risk without a proper "confirm your current
+password" flow, which is its own small feature, not something to bolt onto
+a general directory page.
+
 

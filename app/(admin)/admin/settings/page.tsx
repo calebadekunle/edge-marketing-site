@@ -34,7 +34,7 @@ export default async function SettingsPage() {
         <ThemeEditorForm initial={theme} />
       </section>
 
-      <section>
+      <section id="email">
         <h2 className="text-lg font-bold text-mist mb-2">Email notifications</h2>
         <p className="text-sm text-ash mb-4">
           Get an email the moment someone joins the waitlist or sends a contact
@@ -45,7 +45,7 @@ export default async function SettingsPage() {
         <EmailSettingsForm initial={smtp} />
       </section>
 
-      <section>
+      <section id="mailchimp">
         <h2 className="text-lg font-bold text-mist mb-2">Mailchimp</h2>
         <p className="text-sm text-ash mb-4">
           Automatically add new leads to a Mailchimp audience, so you can run
@@ -65,7 +65,7 @@ export default async function SettingsPage() {
         <FormRedirectsForm initial={formSettings} />
       </section>
 
-      <section>
+      <section id="recaptcha">
         <h2 className="text-lg font-bold text-mist mb-2">reCAPTCHA</h2>
         <p className="text-sm text-ash mb-4">
           Add Google reCAPTCHA to the waitlist and contact forms to keep bots
