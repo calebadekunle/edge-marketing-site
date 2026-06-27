@@ -4,6 +4,11 @@ Things to come back to. Add more anytime — just say "add to checklist."
 
 ## Testing (do once you're ready)
 
+- [ ] Confirm the new charts on `/admin` (Overview) and `/admin/analytics`
+      actually render visually in your browser — verified the data is
+      correct and wired through correctly, but couldn't confirm the actual
+      chart drawing from this build sandbox (no real browser available
+      here to let `recharts` measure its container).
 - [ ] Test Mailchimp integration end-to-end with a real account: fetch
       audiences, save, submit a real waitlist signup, confirm it shows up
       in the Mailchimp audience tagged `waitlist`.

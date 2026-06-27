@@ -532,4 +532,54 @@ rejected with a clear error before anything bad could be saved, then reset
 back to the original defaults and confirmed the homepage returned to
 exactly its original text.
 
+## Admin dashboard redesign — real charts, not flat numbers
+
+Overview and Analytics got a real visual pass — added `recharts` (charting)
+and `lucide-react` (icons) as actual dependencies, not decoration bolted on
+top of what existed.
+
+**Why these two pages specifically:** they're the ones with genuinely
+chart-shaped data — rankings, proportions, trends over time — where a flat
+number or a width-styled div was actively hiding the shape of the data
+rather than showing it. The other admin pages (Settings, Webhooks,
+Compliance, etc.) are mostly forms and lists, which don't have the same
+gap; worth a lighter visual refresh later if it matters, but charts aren't
+the fix there.
+
+**What's new:**
+- **Stat cards** — colored left-border accent + icon per metric, assigned
+  by meaning (signal teal = primary/growth metrics, spark gold = secondary
+  highlight, pulse violet = tertiary data, alert red = reserved for
+  down/risk states), instead of every card looking identical.
+- **Real sparklines** on the Waitlist Signups card — actual daily signup
+  counts from the last 14 days, not a decorative fixed path. This
+  deliberately echoes the same line-plus-pulsing-dot visual language the
+  public site already uses for its own "signal" cards — the admin
+  literally looks like a smaller instance of the same product it manages,
+  rather than a generic dashboard template grafted onto a distinctive
+  public site.
+- **Trend area charts** — signups (Overview) and pageviews (Analytics)
+  over the last 14 days. This is genuinely new information: there was no
+  time-series view anywhere in admin before this, only point-in-time totals.
+- **Top pages** — horizontal bar chart instead of width-styled divs.
+- **Top referrer sources** — donut chart, since "share of total traffic"
+  is a proportion-of-whole question a pie/donut answers more directly
+  than a list of bars does.
+- **Integration status rows** — icon + colored background per integration
+  (mail icon for email, etc.) instead of a plain colored dot.
+
+**One real limitation worth knowing:** `recharts`' `ResponsiveContainer`
+needs an actual browser to measure its parent element's size before it can
+draw anything — this is normal, expected behavior, not a bug, but it does
+mean the very first server-rendered HTML for a chart is an empty
+placeholder until client-side JS hydrates and measures the container. I
+verified the data is computed correctly and passed to the right
+components with the right shape; the actual visual rendering needs
+confirming in a real browser, since I can't run one in this build sandbox.
+
+**Color tokens, not hardcoded hex** — every chart color is a CSS variable
+reference (`var(--color-signal)` etc.), so if you change the site's theme
+colors in `/admin/settings`, these charts pick up the same palette
+automatically rather than needing a separate edit.
+
 

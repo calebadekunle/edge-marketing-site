@@ -629,6 +629,43 @@ export function getTopReferrers(limit = 10): ReferrerCount[] {
     .slice(0, limit);
 }
 
+export type DailyCount = { date: string; count: number };
+
+// Builds a complete day-by-day series for the last `days` days, filling in
+// zeros for days with no activity — without this, a sparkline/trend chart
+// would silently skip gaps and misrepresent the shape of the trend.
+function buildDailySeries(timestamps: string[], days: number): DailyCount[] {
+  const counts = new Map<string, number>();
+  for (const ts of timestamps) {
+    const day = ts.slice(0, 10); // "YYYY-MM-DD" prefix of an ISO timestamp
+    counts.set(day, (counts.get(day) || 0) + 1);
+  }
+
+  const series: DailyCount[] = [];
+  const today = new Date();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    series.push({ date: key, count: counts.get(key) || 0 });
+  }
+  return series;
+}
+
+export function getDailySignups(days = 14): DailyCount[] {
+  const rows = db.prepare(`SELECT created_at FROM waitlist_signups`).all() as {
+    created_at: string;
+  }[];
+  return buildDailySeries(rows.map((r) => r.created_at), days);
+}
+
+export function getDailyPageviews(days = 14): DailyCount[] {
+  const rows = db.prepare(`SELECT created_at FROM pageviews`).all() as {
+    created_at: string;
+  }[];
+  return buildDailySeries(rows.map((r) => r.created_at), days);
+}
+
 // ── Compliance settings ──────────────────────────────────────────────────
 // The footer disclaimer bar shown on every public page. Defaults to the
 // text the site already shipped with — nothing changes for visitors until
