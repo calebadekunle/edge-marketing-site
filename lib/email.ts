@@ -19,6 +19,12 @@ function buildTransporter(s: SmtpSettings) {
     auth: s.username
       ? { user: s.username, pass: s.password || "" }
       : undefined,
+    // Without these, a mismatched secure/port combo (or an unreachable
+    // host) can hang the request indefinitely instead of failing with a
+    // clear error — these cap the worst case at ~15s total.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 15_000,
   });
 }
 

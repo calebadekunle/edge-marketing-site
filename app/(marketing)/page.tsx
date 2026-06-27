@@ -7,51 +7,38 @@ import RiskDisclosureBox from "@/components/RiskDisclosureBox";
 import HeroDiscoveryCard from "@/components/HeroDiscoveryCard";
 import Reveal from "@/components/Reveal";
 import NewsFeed from "@/components/NewsFeed";
+import { getHomepageContent } from "@/lib/db";
 
-const SIGNALS = [
-  { label: "Volume Surge", desc: "Relative volume vs. the trailing average, the first sign something is happening." },
-  { label: "Float & Short Interest", desc: "How much of the float is tradable, and how exposed short sellers are to a squeeze." },
-  { label: "Price Momentum", desc: "Multi-timeframe price action and trend strength, not just today's candle." },
-  { label: "News Sentiment", desc: "Real-time classification of headlines and press releases as they break." },
-  { label: "Pattern Match", desc: "Comparison against historical setups that preceded prior breakouts." },
-];
-
-const FEATURES = [
-  { label: "Real-time screener", desc: "Filter the entire micro-cap universe by sector and momentum in seconds." },
-  { label: "Persistent watchlists", desc: "Live sparkline previews on every ticker you're tracking." },
-  { label: "Smart alerts", desc: "Price, volume, and pattern-based alerts that fire the moment it matters." },
-  { label: "One-tap order flow", desc: "Market, limit, and stop orders with cost previewed before you confirm." },
-];
+export const dynamic = "force-dynamic";
 
 export default function Home() {
+  const c = getHomepageContent();
+
   return (
     <>
       {/* Hero */}
       <Section className="pt-16 sm:pt-28 pb-12 sm:pb-20">
         <div className="grid lg:grid-cols-[1fr_auto] gap-10 items-center">
           <div className="max-w-2xl">
-            <Eyebrow>AI Discovery Engine, built in</Eyebrow>
+            <Eyebrow>{c.hero.eyebrow}</Eyebrow>
             <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-mist leading-[1.05]">
-              Know which penny stocks
+              {c.hero.headline_line1}
               <br />
-              are <span className="text-gradient-signal">actually moving.</span>
+              <span className="text-gradient-signal">{c.hero.headline_line2}</span>
             </h1>
-            <p className="mt-6 text-lg text-ash max-w-xl leading-relaxed">
-              EDGE continuously scores the micro-cap universe on volume, float, momentum,
-              and sentiment — so you see genuine strength, not noise, the moment it shows up.
-            </p>
+            <p className="mt-6 text-lg text-ash max-w-xl leading-relaxed">{c.hero.subhead}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/download"
                 className="cta-pulse rounded-xl bg-signal px-6 py-3.5 text-sm font-semibold text-void hover:bg-signal/90 transition-colors"
               >
-                Get the app
+                {c.hero.cta_primary_label}
               </Link>
               <Link
                 href="/ai-discovery"
                 className="rounded-xl border border-hairline px-6 py-3.5 text-sm font-semibold text-mist hover:border-signal/60 transition-colors"
               >
-                See how discovery works
+                {c.hero.cta_secondary_label}
               </Link>
             </div>
           </div>
@@ -64,33 +51,27 @@ export default function Home() {
       {/* Stat row */}
       <Section className="py-10 border-y border-hairline">
         <div className="grid grid-cols-3 gap-8">
-          <Reveal delay={0}>
-            <StatCounter label="Focus" value="Micro-Cap Equities" />
-          </Reveal>
-          <Reveal delay={120}>
-            <StatCounter label="Differentiator" value="AI Discovery" color="text-signal" />
-          </Reveal>
-          <Reveal delay={240}>
-            <StatCounter label="Broker of Record" value="Alpaca" color="text-spark" />
-          </Reveal>
+          {c.stats.map((s, i) => (
+            <Reveal key={s.label} delay={i * 120}>
+              <StatCounter
+                label={s.label}
+                value={s.value}
+                color={i === 1 ? "text-signal" : i === 2 ? "text-spark" : undefined}
+              />
+            </Reveal>
+          ))}
         </div>
       </Section>
 
       {/* Signal inputs */}
       <Section>
         <Reveal>
-          <Eyebrow>The flagship feature</Eyebrow>
-          <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-4">
-            Five signals. One score.
-          </h2>
-          <p className="text-ash max-w-2xl mb-10 leading-relaxed">
-            The Discovery Engine doesn&apos;t guess — it weighs the same signals
-            experienced traders already watch, continuously, across the entire
-            penny stock universe.
-          </p>
+          <Eyebrow>{c.signals.eyebrow}</Eyebrow>
+          <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-4">{c.signals.heading}</h2>
+          <p className="text-ash max-w-2xl mb-10 leading-relaxed">{c.signals.intro}</p>
         </Reveal>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-          {SIGNALS.map((s, i) => (
+          {c.signals.items.map((s, i) => (
             <Reveal key={s.label} delay={i * 90}>
               <SignalCard label={s.label} desc={s.desc} index={i} />
             </Reveal>
@@ -103,23 +84,19 @@ export default function Home() {
 
       {/* Disclaimer — pure-CSS fade, never JS-gated (see RiskDisclosureBox) */}
       <Section className="py-10">
-        <RiskDisclosureBox title="Not investment advice" scheme="spark">
-          The Discovery Score is a real-time analytical signal, not a prediction or a
-          guarantee of future performance. EDGE does not provide individualized
-          investment advice. Past signal accuracy does not guarantee future results.
+        <RiskDisclosureBox title={c.disclaimer.title} scheme="spark">
+          {c.disclaimer.body}
         </RiskDisclosureBox>
       </Section>
 
       {/* Platform features */}
       <Section className="border-t border-hairline">
         <Reveal>
-          <Eyebrow>The platform</Eyebrow>
-          <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-10">
-            Built for traders who move fast.
-          </h2>
+          <Eyebrow>{c.features.eyebrow}</Eyebrow>
+          <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-10">{c.features.heading}</h2>
         </Reveal>
         <div className="grid sm:grid-cols-2 gap-4">
-          {FEATURES.map((f, i) => (
+          {c.features.items.map((f, i) => (
             <Reveal key={f.label} delay={i * 90}>
               <SignalCard label={f.label} desc={f.desc} index={i} />
             </Reveal>
@@ -130,30 +107,22 @@ export default function Home() {
       {/* CTA */}
       <Section className="text-center border-t border-hairline">
         <Reveal>
-          <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-4">
-            Trade with an edge.
-          </h2>
-          <p className="text-ash max-w-md mx-auto mb-8">
-            Join the waitlist and be first to know when EDGE opens up.
-          </p>
+          <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-4">{c.cta.heading}</h2>
+          <p className="text-ash max-w-md mx-auto mb-8">{c.cta.subhead}</p>
           <Link
             href="/download"
             className="cta-pulse inline-block rounded-xl bg-signal px-8 py-3.5 text-sm font-semibold text-void hover:bg-signal/90 transition-colors"
           >
-            Get early access
+            {c.cta.button_label}
           </Link>
         </Reveal>
       </Section>
 
       {/* Live market news — self-updating, real headlines via RSS */}
       <Section className="border-t border-hairline">
-        <Eyebrow>Stay informed</Eyebrow>
-        <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-4">
-          The market, as it happens.
-        </h2>
-        <p className="text-ash max-w-2xl mb-10 leading-relaxed">
-          Real headlines, refreshed automatically — no need to reload the page.
-        </p>
+        <Eyebrow>{c.news.eyebrow}</Eyebrow>
+        <h2 className="text-3xl sm:text-4xl font-bold text-mist mb-4">{c.news.heading}</h2>
+        <p className="text-ash max-w-2xl mb-10 leading-relaxed">{c.news.subhead}</p>
         <NewsFeed />
       </Section>
     </>

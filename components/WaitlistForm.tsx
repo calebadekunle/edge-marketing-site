@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import Script from "next/script";
 
-export default function WaitlistForm() {
+export default function WaitlistForm({
+  redirectUrl,
+  recaptchaSiteKey,
+}: {
+  redirectUrl?: string | null;
+  recaptchaSiteKey?: string | null;
+}) {
   const [email, setEmail] = useState("");
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
@@ -31,6 +38,18 @@ export default function WaitlistForm() {
           return;
         }
 
+        let recaptchaToken: string | null = null;
+        if (recaptchaSiteKey) {
+          // grecaptcha is a global injected by the script below — there's
+          // no official npm types for it, hence the cast.
+          recaptchaToken = (window as unknown as { grecaptcha?: { getResponse: () => string } })
+            .grecaptcha?.getResponse() || null;
+          if (!recaptchaToken) {
+            setError("Please complete the reCAPTCHA check.");
+            return;
+          }
+        }
+
         setStatus("loading");
         try {
           const res = await fetch("/api/waitlist", {
@@ -39,6 +58,7 @@ export default function WaitlistForm() {
             body: JSON.stringify({
               email,
               consent,
+              recaptchaToken,
               referrer: typeof document !== "undefined" ? document.referrer || null : null,
             }),
           });
@@ -47,6 +67,11 @@ export default function WaitlistForm() {
           if (!res.ok) {
             setError(data.error || "Something went wrong. Please try again.");
             setStatus("error");
+            return;
+          }
+
+          if (redirectUrl) {
+            window.location.href = redirectUrl;
             return;
           }
 
@@ -90,6 +115,13 @@ export default function WaitlistForm() {
           .
         </span>
       </label>
+
+      {recaptchaSiteKey && (
+        <>
+          <Script src="https://www.google.com/recaptcha/api.js" strategy="afterInteractive" />
+          <div className="g-recaptcha" data-sitekey={recaptchaSiteKey} />
+        </>
+      )}
 
       {error && <p className="text-xs text-alert">{error}</p>}
     </form>

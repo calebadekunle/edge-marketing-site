@@ -69,8 +69,13 @@ export default function EmailSettingsForm({ initial }: { initial: SmtpSettingsSa
   async function sendTest() {
     setTestStatus("sending");
     setTestError("");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20_000);
     try {
-      const res = await fetch("/api/admin/settings/email/test", { method: "POST" });
+      const res = await fetch("/api/admin/settings/email/test", {
+        method: "POST",
+        signal: controller.signal,
+      });
       const data = await res.json();
       if (!res.ok || !data.ok) {
         setTestError(data.error || "Test send failed.");
@@ -78,9 +83,15 @@ export default function EmailSettingsForm({ initial }: { initial: SmtpSettingsSa
         return;
       }
       setTestStatus("sent");
-    } catch {
-      setTestError("Network error. Please try again.");
+    } catch (err) {
+      setTestError(
+        err instanceof Error && err.name === "AbortError"
+          ? "Timed out after 20s — the server is likely unreachable or the port/TLS settings don't match."
+          : "Network error. Please try again."
+      );
       setTestStatus("error");
+    } finally {
+      clearTimeout(timeout);
     }
   }
 

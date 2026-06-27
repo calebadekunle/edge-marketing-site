@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import Script from "next/script";
 
-export default function ContactForm() {
+export default function ContactForm({
+  redirectUrl,
+  recaptchaSiteKey,
+}: {
+  redirectUrl?: string | null;
+  recaptchaSiteKey?: string | null;
+}) {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [consent, setConsent] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
@@ -31,6 +38,16 @@ export default function ContactForm() {
           return;
         }
 
+        let recaptchaToken: string | null = null;
+        if (recaptchaSiteKey) {
+          recaptchaToken = (window as unknown as { grecaptcha?: { getResponse: () => string } })
+            .grecaptcha?.getResponse() || null;
+          if (!recaptchaToken) {
+            setError("Please complete the reCAPTCHA check.");
+            return;
+          }
+        }
+
         setStatus("loading");
         try {
           const res = await fetch("/api/contact", {
@@ -39,6 +56,7 @@ export default function ContactForm() {
             body: JSON.stringify({
               ...form,
               consent,
+              recaptchaToken,
               referrer: typeof document !== "undefined" ? document.referrer || null : null,
             }),
           });
@@ -47,6 +65,11 @@ export default function ContactForm() {
           if (!res.ok) {
             setError(data.error || "Something went wrong. Please try again.");
             setStatus("error");
+            return;
+          }
+
+          if (redirectUrl) {
+            window.location.href = redirectUrl;
             return;
           }
 
@@ -111,6 +134,13 @@ export default function ContactForm() {
           .
         </span>
       </label>
+
+      {recaptchaSiteKey && (
+        <>
+          <Script src="https://www.google.com/recaptcha/api.js" strategy="afterInteractive" />
+          <div className="g-recaptcha" data-sitekey={recaptchaSiteKey} />
+        </>
+      )}
 
       {error && <p className="text-xs text-alert">{error}</p>}
 

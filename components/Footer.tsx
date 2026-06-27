@@ -27,7 +27,7 @@ const COLUMNS = [
   },
 ];
 
-export default function Footer() {
+export default function Footer({ disclaimerText }: { disclaimerText: string }) {
   return (
     <footer className="border-t border-hairline">
       <div className="mx-auto max-w-6xl px-5 py-12 grid grid-cols-2 sm:grid-cols-5 gap-8">
@@ -59,12 +59,7 @@ export default function Footer() {
       {/* Persistent compliance disclosure bar — present on every page, like the app */}
       <div className="border-t border-hairline bg-panel/40">
         <p className="mx-auto max-w-6xl px-5 py-4 text-[11px] leading-relaxed text-ash">
-          EDGE is not a broker-dealer and does not hold customer funds or securities.
-          Brokerage services are provided by Alpaca Securities LLC, a registered
-          broker-dealer and member of FINRA/SIPC. The AI Discovery Engine provides
-          analytical signals only — it is not investment advice, and past performance
-          does not guarantee future results. Penny stocks are highly volatile and can
-          result in the loss of your entire investment.{" "}
+          {disclaimerText}{" "}
           <Link href="/security#disclosures" className="underline hover:text-signal">
             Full risk disclosures
           </Link>

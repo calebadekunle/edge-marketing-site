@@ -6,7 +6,12 @@ import { usePathname } from "next/navigation";
 const NAV = [
   { href: "/admin", label: "Overview", live: true },
   { href: "/admin/submissions", label: "Submissions", live: true },
+  { href: "/admin/homepage", label: "Homepage", live: true },
   { href: "/admin/settings", label: "Settings", live: true },
+  { href: "/admin/seo", label: "SEO", live: true },
+  { href: "/admin/webhooks", label: "Webhooks", live: true },
+  { href: "/admin/analytics", label: "Analytics", live: true },
+  { href: "/admin/compliance", label: "Compliance", live: true },
 ];
 
 export default function AdminMobileNav() {

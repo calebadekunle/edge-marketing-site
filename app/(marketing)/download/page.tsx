@@ -2,8 +2,15 @@ import { Section, Eyebrow } from "@/components/Section";
 import AppDownloadCTA from "@/components/AppDownloadCTA";
 import WaitlistForm from "@/components/WaitlistForm";
 import RoadmapTimeline from "@/components/RoadmapTimeline";
+import { getFormSettings, getRecaptchaSettings } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export default function DownloadPage() {
+  const { waitlist_redirect_url } = getFormSettings();
+  const recaptcha = getRecaptchaSettings();
+  const recaptchaSiteKey = recaptcha.enabled ? recaptcha.site_key : null;
+
   return (
     <>
       <Section className="pt-16 sm:pt-24 pb-10 text-center">
@@ -23,7 +30,7 @@ export default function DownloadPage() {
       <Section className="py-10 border-t border-hairline">
         <h2 className="text-xl font-bold text-mist mb-5 text-center">Join the waitlist</h2>
         <div className="max-w-md mx-auto">
-          <WaitlistForm />
+          <WaitlistForm redirectUrl={waitlist_redirect_url} recaptchaSiteKey={recaptchaSiteKey} />
         </div>
       </Section>
 
