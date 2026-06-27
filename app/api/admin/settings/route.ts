@@ -7,10 +7,7 @@ export const dynamic = "force-dynamic";
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
 function unauthorized() {
-  return new NextResponse("Authentication required.", {
-    status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="EDGE Admin"' },
-  });
+  return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 }
 
 export async function GET() {

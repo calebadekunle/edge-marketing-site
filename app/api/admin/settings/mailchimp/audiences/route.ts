@@ -6,10 +6,7 @@ import { getMailchimpSettings } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 function unauthorized() {
-  return new NextResponse("Authentication required.", {
-    status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="EDGE Admin"' },
-  });
+  return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 }
 
 export async function POST(req: NextRequest) {

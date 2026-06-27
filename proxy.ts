@@ -1,37 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/adminSession";
 
-function unauthorized() {
-  return new NextResponse("Authentication required.", {
-    status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="EDGE Admin"' },
-  });
-}
+const PUBLIC_PATHS = [
+  "/admin/login",
+  "/api/admin/login",
+  "/admin/forgot-password",
+  "/api/admin/forgot-password",
+  "/admin/reset-password",
+  "/api/admin/reset-password",
+];
 
 export function proxy(req: NextRequest) {
-  const user = process.env.ADMIN_USERNAME;
-  const pass = process.env.ADMIN_PASSWORD;
+  const { pathname } = req.nextUrl;
 
-  // Fail closed: if credentials aren't configured in the environment,
-  // block admin access entirely rather than leaving it open.
-  if (!user || !pass) return unauthorized();
-
-  const auth = req.headers.get("authorization");
-  if (!auth || !auth.startsWith("Basic ")) return unauthorized();
-
-  let decoded = "";
-  try {
-    decoded = Buffer.from(auth.slice(6), "base64").toString("utf-8");
-  } catch {
-    return unauthorized();
+  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+    return NextResponse.next();
   }
 
-  const sepIndex = decoded.indexOf(":");
-  const suppliedUser = decoded.slice(0, sepIndex);
-  const suppliedPass = decoded.slice(sepIndex + 1);
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const authorized = verifySessionToken(token);
 
-  if (suppliedUser !== user || suppliedPass !== pass) return unauthorized();
+  if (authorized) return NextResponse.next();
 
-  return NextResponse.next();
+  // API calls can't be usefully redirected — a fetch() call needs a JSON
+  // 401 it can react to, not a 302 to a login page it'll never render.
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
+
+  const loginUrl = new URL("/admin/login", req.url);
+  loginUrl.searchParams.set("next", pathname);
+  return NextResponse.redirect(loginUrl);
 }
 
 export const config = {

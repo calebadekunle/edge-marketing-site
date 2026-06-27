@@ -65,6 +65,38 @@ export async function sendAdminNotification(
   }
 }
 
+// Same as sendAdminNotification, but to an explicit recipient rather than
+// always the configured notify_email — needed for things like password
+// reset links, which must go to the recovery email specifically.
+export async function sendToAddress(
+  to: string,
+  input: NotificationInput
+): Promise<{ attempted: boolean; error?: string }> {
+  const settings = getSmtpSettings();
+
+  if (!settings.enabled || !settings.host || !settings.port || !settings.from_email) {
+    return { attempted: false };
+  }
+
+  try {
+    const transporter = buildTransporter(settings);
+    await transporter.sendMail({
+      from: settings.from_email,
+      to,
+      subject: input.subject,
+      text: input.text,
+      html: input.html,
+    });
+    return { attempted: true };
+  } catch (err) {
+    console.error("[email] Failed to send to", to, ":", err);
+    return {
+      attempted: true,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 export function waitlistNotification(input: {
   email: string;
   ip: string | null;

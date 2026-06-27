@@ -1,6 +1,12 @@
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
+import {
+  hashPassword,
+  verifyPassword,
+  generateResetToken,
+  hashResetToken,
+} from "@/lib/password";
 
 // SQLite is the self-hosted backend for the marketing site's forms — no
 // external service required. The file lives outside version control
@@ -124,6 +130,21 @@ db.exec(`
     key_id TEXT,
     secret_key TEXT,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS admin_account (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    password_hash TEXT NOT NULL,
+    recovery_email TEXT,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token_hash TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
 
@@ -1024,4 +1045,101 @@ export function setAlpacaSettings(input: { key_id: string | null; secret_key?: s
        secret_key = excluded.secret_key,
        updated_at = datetime('now')`
   ).run(input.key_id, secretKey);
+}
+
+// ── Admin account (password + recovery email) ────────────────────────────
+// The admin password used to live ONLY in process.env.ADMIN_PASSWORD, with
+// no way to change it short of editing .env.local and restarting. The
+// first time this is read, it's lazily seeded from that env var into the
+// database (hashed) — same backward-compatible pattern as the Alpaca
+// migration. After that, the database copy is authoritative; the env var
+// is only ever consulted again if the database row is somehow missing.
+
+function ensureAdminAccountInitialized(): void {
+  const row = db.prepare(`SELECT id FROM admin_account WHERE id = 1`).get();
+  if (row) return;
+
+  const envPassword = process.env.ADMIN_PASSWORD;
+  if (!envPassword) return; // nothing to seed from; login will fail closed anyway
+
+  db.prepare(
+    `INSERT INTO admin_account (id, password_hash, recovery_email) VALUES (1, ?, NULL)`
+  ).run(hashPassword(envPassword));
+}
+
+export function verifyAdminPassword(password: string): boolean {
+  ensureAdminAccountInitialized();
+  const row = db.prepare(`SELECT password_hash FROM admin_account WHERE id = 1`).get() as
+    | { password_hash: string }
+    | undefined;
+
+  if (row) return verifyPassword(password, row.password_hash);
+
+  // Database row still doesn't exist (e.g. ADMIN_PASSWORD wasn't set when
+  // ensureAdminAccountInitialized ran) — fall back to a direct env compare
+  // so existing deployments never get locked out by this migration.
+  const envPassword = process.env.ADMIN_PASSWORD;
+  return !!envPassword && password === envPassword;
+}
+
+export function setAdminPassword(newPassword: string): void {
+  ensureAdminAccountInitialized();
+  const hash = hashPassword(newPassword);
+  db.prepare(
+    `INSERT INTO admin_account (id, password_hash, recovery_email, updated_at)
+     VALUES (1, ?, (SELECT recovery_email FROM admin_account WHERE id = 1), datetime('now'))
+     ON CONFLICT(id) DO UPDATE SET password_hash = excluded.password_hash, updated_at = datetime('now')`
+  ).run(hash);
+}
+
+export function getRecoveryEmail(): string | null {
+  ensureAdminAccountInitialized();
+  const row = db.prepare(`SELECT recovery_email FROM admin_account WHERE id = 1`).get() as
+    | { recovery_email: string | null }
+    | undefined;
+  return row?.recovery_email ?? null;
+}
+
+export function setRecoveryEmail(email: string | null): void {
+  ensureAdminAccountInitialized();
+  db.prepare(
+    `INSERT INTO admin_account (id, password_hash, recovery_email, updated_at)
+     VALUES (1, (SELECT password_hash FROM admin_account WHERE id = 1), ?, datetime('now'))
+     ON CONFLICT(id) DO UPDATE SET recovery_email = excluded.recovery_email, updated_at = datetime('now')`
+  ).run(email);
+}
+
+// ── Password reset tokens ─────────────────────────────────────────────────
+// Only the HASH of the token is ever stored — same principle as never
+// storing plaintext passwords. The raw token exists only in the email and
+// in the URL the admin clicks; if the database were ever read by someone
+// else, the stored hashes alone can't be used to reset the password.
+
+const RESET_TOKEN_TTL_MINUTES = 30;
+
+export function createPasswordResetToken(): string {
+  const token = generateResetToken();
+  const tokenHash = hashResetToken(token);
+  const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MINUTES * 60_000).toISOString();
+
+  db.prepare(
+    `INSERT INTO password_reset_tokens (token_hash, expires_at, used) VALUES (?, ?, 0)`
+  ).run(tokenHash, expiresAt);
+
+  return token; // raw token — caller is responsible for emailing it, never logging it
+}
+
+export function consumePasswordResetToken(rawToken: string): boolean {
+  const tokenHash = hashResetToken(rawToken);
+  const row = db
+    .prepare(
+      `SELECT id, expires_at, used FROM password_reset_tokens WHERE token_hash = ? ORDER BY id DESC LIMIT 1`
+    )
+    .get(tokenHash) as { id: number; expires_at: string; used: number } | undefined;
+
+  if (!row || row.used) return false;
+  if (new Date(row.expires_at).getTime() < Date.now()) return false;
+
+  db.prepare(`UPDATE password_reset_tokens SET used = 1 WHERE id = ?`).run(row.id);
+  return true;
 }

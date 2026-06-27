@@ -10,6 +10,7 @@ import "@fontsource/jetbrains-mono/700.css";
 import "../globals.css";
 import AdminSidebar from "./_components/AdminSidebar";
 import AdminMobileNav from "./_components/AdminMobileNav";
+import LogoutButton from "./_components/LogoutButton";
 
 export const metadata: Metadata = {
   title: "EDGE Admin",
@@ -35,9 +36,12 @@ export default function AdminRootLayout({
               <span className="hidden md:inline text-sm font-semibold text-ash">
                 Internal dashboard
               </span>
-              <span className="flex items-center gap-2 text-xs text-ash">
-                <span className="h-2 w-2 rounded-full bg-signal" />
-                System Online
+              <span className="flex items-center gap-4 text-xs text-ash">
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-signal" />
+                  System Online
+                </span>
+                <LogoutButton />
               </span>
             </header>
             <main className="flex-1 px-6 sm:px-8 py-6 sm:py-8">

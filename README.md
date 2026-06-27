@@ -617,4 +617,110 @@ to reach has a real lockout risk without a proper "confirm your current
 password" flow, which is its own small feature, not something to bolt onto
 a general directory page.
 
+## Real login + logout, replacing Basic Auth entirely
+
+The admin area used to be gated by HTTP Basic Auth — the native browser
+popup. That has a real limitation: **Basic Auth has no logout.** The
+browser caches your credentials for the origin and keeps resending them
+automatically until you close the browser, clear site data, or restart —
+there's no server-side session to invalidate, so a "Log out" button
+genuinely had nothing to do.
+
+Replaced with a proper session system:
+- **`/admin/login`** — a branded login page (own minimal layout, no
+  sidebar, matching the dark/teal theme) instead of the native browser
+  dialog.
+- **Signed session cookie** — `HttpOnly`, `SameSite=Lax`, `Secure` in
+  production. Signed with HMAC (same pattern already used for webhook
+  payloads), keyed off the existing `ADMIN_PASSWORD` — no new secret to
+  manage, since anyone who could forge a valid session already has the
+  real password and full access anyway.
+- **A logout button that actually logs out** — clears the cookie
+  server-side; the next request genuinely has no valid session.
+- **Same credentials as before** — still `ADMIN_USERNAME`/`ADMIN_PASSWORD`
+  in `.env.local`. Only the mechanism changed, not what you log in with.
+- **`proxy.ts` now branches by request type** — a browser navigating to an
+  unauthenticated admin page gets redirected to `/admin/login?next=...`
+  (returns there after signing in); an API call (`fetch()` from a form)
+  gets a JSON 401 it can actually react to, never a redirect it can't do
+  anything with.
+- **The defense-in-depth check still exists** — every page's
+  `isAdminAuthorized()` call now checks the session cookie instead of a
+  Basic Auth header, but the two-layer protection (proxy.ts + the page
+  itself) is unchanged structurally.
+
+I tested the complete flow end-to-end with a real cookie jar: wrong
+credentials rejected with no cookie set, correct credentials issue a real
+signed cookie, that cookie grants access to both pages and API routes,
+logout clears it, and the very next request after logging out correctly
+gets redirected back to the login page. Also confirmed a forged/tampered
+cookie gets rejected rather than silently accepted.
+
+**Cleanup that came with this:** every API route's `unauthorized()` helper
+used to return `WWW-Authenticate: Basic` — no longer accurate now that
+Basic Auth isn't the mechanism, so all 14 of them were updated to return a
+plain JSON 401 instead.
+
+## Forgot password — real email-based reset
+
+Closes a real gap: the admin password used to live only in
+`.env.local`, with no way to change it short of editing the file and
+restarting — which meant there was no way to *recover* from a forgotten
+one short of doing exactly that. Now there's a proper reset flow.
+
+**The password itself had to move into the database first** — a "forgot
+password" flow inherently needs the password to be something the running
+app can actually look up and change, which a static env var can never be.
+Same backward-compatible migration pattern as Alpaca: the first time the
+password is checked, it's lazily hashed and copied into the database; from
+then on the database copy is authoritative, with the env var only
+consulted again if that row is somehow missing. **Hashed with `scrypt`**
+(Node's built-in crypto — no new dependency), never stored in plain text,
+verified with a constant-time comparison.
+
+**Two ways to change it:**
+- **`/admin/account`** (while logged in) — change your password directly,
+  with your *current* password required first. This is the safe way to
+  rotate a password you still remember.
+- **"Forgot password?" on the login screen** — for when you don't
+  remember it. Enter the recovery email on file, get a reset link, click
+  it, set a new one. You're logged in automatically afterward — no reason
+  to make you type the new password twice in two different places.
+
+**Recovery email is a separate, dedicated field** (also set on
+`/admin/account`), not reused from the SMTP "notify" address — those are
+different concerns; the notify address is where lead alerts go, the
+recovery email is specifically who's allowed to reset the login.
+**Required to be set before this works at all** — there's nowhere to send
+a reset link otherwise.
+
+**Reset tokens, not the password reset form itself, are the security-
+critical part**, so they get the same care as the password:
+- Only the **hash** of the token is ever stored — the raw value exists
+  only in the email and the URL, never in the database, mirroring "never
+  store plaintext passwords."
+- **Single-use** — consumed atomically the moment it's verified; reusing
+  the same link a second time fails.
+- **30-minute expiry.**
+- **No account enumeration** — submitting an email that doesn't match the
+  recovery email on file gets the exact same generic response as one that
+  does, so a stranger can't use this form to learn whether a recovery
+  email guess was right. (The one exception is a distinct error when SMTP
+  itself isn't configured at all — that's a system state, not account
+  info, so it's safe to say plainly.)
+
+I tested the complete flow for real, not just by reading the code: set up
+a test recovery email and a local SMTP catcher, requested a reset with the
+wrong email (confirmed: generic response, nothing sent), requested it with
+the right one (confirmed: real email arrived with a working link),
+attempted the reset with a deliberately wrong token (rejected), attempted
+it with a too-short password (rejected, and confirmed the real token
+wasn't burned by that failed attempt), then completed the reset with the
+real token and a valid password (succeeded, auto-login confirmed via a
+real cookie jar), then confirmed the token was now dead (reusing it
+failed), then confirmed the *old* password no longer logs in and the *new*
+one does. Also tested `/admin/account`'s change-password path the same
+way: wrong current password rejected, correct one succeeds, and the
+resulting password actually works for a fresh login.
+
 

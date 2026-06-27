@@ -8,6 +8,7 @@ import {
 } from "@/lib/db";
 import { isAdminAuthorized } from "@/lib/adminAuth";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import AlpacaKeysForm from "./AlpacaKeysForm";
 import KeyDirectoryRow from "./KeyDirectoryRow";
 
@@ -97,17 +98,23 @@ export default async function ApiKeysPage() {
 
       <div>
         <h2 className="text-sm font-semibold text-mist mb-3">
-          Still environment-variable only, on purpose
+          Login credentials
         </h2>
         <div className="glass-card rounded-2xl p-5">
-          <p className="text-sm text-mist">Admin login (ADMIN_USERNAME / ADMIN_PASSWORD)</p>
+          <p className="text-sm text-mist">Admin password &amp; recovery email</p>
           <p className="text-xs text-ash mt-1">
-            Deliberately not moved into this page. Editing your own login
-            credentials from inside a page you needed those same credentials
-            to reach has a real lockout risk if done without a proper
-            &quot;confirm your current password first&quot; flow — worth building
-            correctly as its own thing if you want this changeable without
-            editing `.env.local` directly, not bolted onto this directory.
+            Changing your own password now lives at{" "}
+            <Link href="/admin/account" className="text-signal hover:underline">
+              /admin/account
+            </Link>{" "}
+            — kept separate from this directory on purpose, since it requires
+            confirming your current password first to avoid a lockout, which
+            doesn&apos;t fit the simple &quot;edit the field, save&quot; pattern the
+            rest of this page uses. The username (
+            <code className="text-[11px]">ADMIN_USERNAME</code>) still lives
+            in <code className="text-[11px]">.env.local</code> only —
+            usernames aren&apos;t typically what people forget, so there was no
+            real need to move it.
           </p>
         </div>
       </div>
